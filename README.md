@@ -1,5 +1,6 @@
 # Network & System Study
-## DB(MySQL&MariaDB), Linux, Windows Server, Python, NetWork(Packet Tracer, GNS3, Tera Term 사용 실습)
-
-# HTML(CSS,JavaScript), Java, Spring&SpringBoot, Android, React, BigData
-## 이론 필기 한 것들 추가 예정
+- DB(MySQL&MariaDB)
+- Linux(CentOS, Ubuntu)
+- Windows Server
+- Python(기본 문법)
+- NetWork(Packet Tracer, GNS3, Tera Term 사용 실습, 네트워크 이론 및 실습)
