@@ -1,0 +1,38 @@
+1. ZSH 설치
+$ sudo apt -y update ; sudo apt -y upgrade
+$ echo $SHELL    # 지금 쓰고 있는 쉘 확인
+$ sudo apt-get install zsh
+$ chsh -s $(which zsh)  # 기본 쉘을 zsh로 변경
+$ sudo apt-get install curl    # curl 설치
+$ sudo apt-get install git #git 설치
+$ sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+
+# 폰트 설치
+$ sudo apt-get install fonts-powerline
+$ git clone https://github.com/powerline/fonts.git --depth=1
+$ cd fonts
+$ ./install.sh
+$ cd ..
+$ rm -rf fonts  # fonts 폴더 삭제./
+
+# 플러그인 설치
+$ cd ~/.oh-my-zsh/plugins    # 여기에 플러그인 클론하기
+$ git clone https://github.com/zsh-users/zsh-autosuggestions
+$ git clone https://github.com/zsh-users/zsh-syntax-highlighting
+$ vim ~/.zshrc
+ZSH_THEME="agnoster"
+plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
+
+$ source ~/.zshrc
+
+2. NVIM 설치
+# python을 설치함
+$ sudo apt-get install software-properties-common
+$ sudo apt-get install python3-dev python3-pip
+$ sudo add-apt-repository ppa:neovim-ppa/unstable
+$ sudo apt-get update
+$ pip3 install --user neovim
+$ sudo apt-get install neovim
+$ vim ~/.zshrc
+alias vi='nvim' # 마지막 줄에 추가
+alias vim='nvim'  # 설정시 vim 을 입력해도 neovim 실행

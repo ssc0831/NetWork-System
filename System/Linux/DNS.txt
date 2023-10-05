@@ -1,0 +1,151 @@
+※ 가상머신 생성(CentOS7)
+ - 이름 : DNS-Server
+ - 나머진 다 기본
+ - ip 10
+-------------------------------------------------------------------------------------------------------------------------------------
+[root@localhost ~]# yum install -y bind-utils
+[root@localhost ~]# nslookup
+> server
+Default server: 8.8.8.8
+Address: 8.8.8.8#53
+> www.danawa.com
+Server:         8.8.8.8
+Address:        8.8.8.8#53
+
+Non-authoritative answer:
+Name:   www.danawa.com
+Address: 119.205.194.11
+> www.nate.com
+Server:         8.8.8.8
+Address:        8.8.8.8#53
+
+Non-authoritative answer:
+Name:   www.nate.com
+Address: 120.50.131.112
+-------------------------------------------------------------------------------------------------------------------------------------
+■ DNS 서버
+
+1. bind 패키지 설치 : named 서비스를 사용할 수 있다.
+[root@localhost ~]# yum install -y bind
+[root@localhost ~]# vim /etc/named.conf
+	:se nu //13행
+	options {
+13		listen-on port 53 { 127.0.0.1; };	=> listen-on port 53 { any; };
+14		listen-on-v6 port 53 { ::1; };	=> listen-on-v6 port 53 { none; };
+21		 allow-query     { localhost; };	=>  allow-query     { any; };
+35		yes
+36		dnssec-validation no;
+:wq
+
+[root@localhost ~]# cd /var/named
+[root@localhost named]# ls
+data  dynamic  named.ca  named.empty  named.localhost  named.loopback  slaves
+[root@localhost named]# vim named.ca
+
+[root@localhost ~]# systemctl restart named
+[root@localhost ~]# firewall-cmd --add-service=dns
+success
+[root@localhost ~]# firewall-cmd --permanent --add-service=dns
+success
+
+Thin-Win7-2 -> DNS(192.168.183.10) 주소 변경 ->vmware settings -> network adapter -> NAT 변경 -> 인터넷 들어가기 -> 연결 확인
+
+------------------------------------------
+
+web-cloud(.6) / wed-server(.5) / dns-server(.10)
+
+2. 각자 이니셜로 도메인 지정
+- www.dj.co.kr 192.168.183.5
+- cloud.dk.co.kr 192.168.183.6
+
+[root@localhost ~]# vim /etc/named.conf
+ 54 zone "." IN {
+ 55        	 	type hint;
+ 56        		file "named.ca";
+ 57};
+ 58
+ 59 zone "dj.co.kr" IN {
+ 60         		file "dj.co.kr.db";
+ 61        		type master;
+ 62 };
+추가 => :wq
+[root@localhost ~]# cd /var/named
+[root@localhost named]# ls
+data  dynamic  named.ca  named.empty  named.localhost  named.loopback  slaves
+[root@localhost named]# cp named.empty dj.co.kr.db
+[root@localhost named]# vim named.empty		//내용 복사 후 dj.co.kr.db에 붙여넣기
+[root@localhost named]# vim dj.co.kr.db
+$TTL 3H
+@       IN SOA  @ yoodj0206.gmail.com. (
+                                2022031801      ; serial
+                                        1D      ; refresh
+                                        1H      ; retry
+                                        1W      ; expire
+                                        3H )    ; minimum
+        NS      ns.dj.co.kr.
+        A       192.168.183.10
+
+ns      A       192.168.183.10
+www     A       192.168.183.5
+cloud   A       192.168.183.6
+blog	A	192.168.183.7
+
+<권한 설정>
+[root@localhost named]# ls -l
+[root@localhost named]# chgrp named dj.co.kr.db		//그룹만 변경
+[root@localhost named]# ls -l
+[root@localhost named]# systemctl restart named
+
+Thin-Win cmd 창에 nslookup을 사용하고 www.dj.co.kr => '서버: , 이름:' 이 나온다.
+
+■ 연결 확인(익스플로러)
+- www.dj.co.kr -> HomePage(ip 5)
+- cloud.dj.co.kr -> HomePage(ip 6)
+- blog.dj.co.kr -> HomePage(ip 7)
+※커맨트창에서 연결이 안될때
+각각의 웹서버에 httpd, mariadb 재시작, firewall 끄기 확인
+※ 익스플로러에 창이 안나올 때(커맨트 창에는 연결이 되는데 익스플로러에 연결이 안될 때)
+DNS 캐시 삭제 + 익스플로러 쿠키 삭제
+ipconfig /flushdns(커맨트창에서)
+
+----------------------------------------------------------------------------------------------------------------
+
+3. CNAME : 별칭
+ - 하나의 서버에서 여러 서비스를 할 경우 사용
+ - 각 서비스마다 IP를 넣으면 관리상 어려움이 생김
+ - CNAME을 이용하여 별칭을 지정하면 하나의 IP만 수정
+        NS      ns.dj.co.kr.
+        A       192.168.183.10
+
+ns      A       192.168.183.10
+www     A       192.168.183.7
+cloud   CNAME   www
+blog    CNAME   www
+test    CNAME   www
+test1   CNAME   blog
+se      CNAME   cloud
+
+4. 부하분산 역활(거의 쓰지 않는다.)
+        NS      ns.dj.co.kr.
+        A       192.168.183.10
+
+ns      A       192.168.183.10
+www     A       192.168.183.7
+www     A       192.168.183.6
+www     A       192.168.183.5
+
+5. 내/외부 DNS연결
+
+- 내부 DNS서버(기억하고 있기)
+[root@localhost named]# vim /etc/named.conf
+
+37	forwarders { 100.200.245.10; };
+
+
+
+
+
+
+
+
+

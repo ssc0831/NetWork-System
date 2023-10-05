@@ -1,0 +1,123 @@
+■ DHCP 서버
+ - DHCP 서버 : 클라이언트에 IP를 자동으로 할당해 주는 서버
+ - Discover -> Offer -> Request -> Ack
+1. DHCP Discover	(클라이언트 -> DHCP Server)	: 자기 네트워크로 브로드캐스팅으로 패킷을 날린다.
+1.5. 		(DHCP Server -> 네트워크)	: Offer 패킷을 보내기 전에 해당 IP가 사용되는 확인
+2. DHCP Offer	(DHCP Server -> 클라이언트)	: IP 할당
+3. DHCP Request	(클라이언트 -> DHCP Server) 	: '내가 받은 IP를 그대로 써도 된냐?'라고 다시 물어본다.
+4. DHCP Ack	(DHCP Server -> 클라이언트) 	: 한번 더 확인
+
+■ DHCP 서버 설치
+[root@localhost ~]# yum install -y dhcp
+[root@localhost ~]# rpm -qa | grep dhcp
+dhcp-libs-4.2.5-83.el7.centos.1.x86_64
+dhcp-4.2.5-83.el7.centos.1.x86_64
+dhcp-common-4.2.5-83.el7.centos.1.x86_64
+
+-------------------------------------------------------------------------------------------------------------------------------------
+※ 클라우드 - 배포용이미지 - Thin-win7.egg 다운로드
+ - 압축 푼 후 -
+ vmware에서 file -open- 압축푼 곳 찾아가서
+ Thin-win7.vmx 더블클릭
+-------------------------------------------------------------------------------------------------------------------------------------
+
+ ▷ 설정(ex. 172.16.31.0/24 대역을 사용)
+[root@localhost ~]# ls /etc/dhcp/
+dhclient.d  dhclient-exit-hooks.d  dhcpd6.conf  dhcpd.conf  scripts
+[root@localhost ~]# vim /etc/dhcp/dhcpd.conf
+	#
+	# DHCP Server Configuration file.
+	#   see /usr/share/doc/dhcp*/dhcpd.conf.example
+	#   see dhcpd.conf(5) man page
+	#
+	ddns-update-style interim;
+
+	subnet 192.168.183.0 netmask 255.255.255.0 {} 		//서버 네트워크 대역 정의
+
+	subnet 172.16.31.0 netmask 255.255.255.0 {		//할당 받을 네트워크 대역
+       		option routers 172.16.31.254;			//라우터 GW주소
+        		option subnet-mask 255.255.255.0;		//subnetmask
+        		range dynamic-bootp 172.16.31.100 172.16.31.150; 	//할당 IP 범위(100~150)
+		option domain-name-servers 8.8.8.8;		//dns
+	}
+esc -> :wq
+[root@localhost ~]# systemctl restart dhcpd
+Job for dhcpd.service failed because the control process exited with error code. See "systemctl status dhcpd.service" and "journalctl -xe" for details.
+=> 오타 확인 or IP 확인
+[root@localhost ~]# systemctl restart dhcpd // 아무말 없으면 성공
+
+※ vmware에 vmnet 추가하기
+edit - vitual network edit - change network - vmnet2,3 Add network
+vmnet2 선택 후 use local DHCP service to ~ 체크해제(vmnet3 도 동일하게 실시) - 설정완료
+DHCP, Thin-win7-2의 Network Adapter에 들어가서 Custom에서 vmnet2로 변경
+
+GNS 열기
+ - GNS에 서버 만들기 :edit - preferences - VMware VMs - new - DHCP, Thin-win7-2 선택 - finsh
+ - 심볼 변경 : DHCP 선택 - 밑에 edit 선택 - symbol 에서 circle-bule - server 선택(:/symbols/affinity/circle/blue/server.svg)
+ - DHCP, Thin-Win7, router, Ethernet switch 연결
+		R1(172.16.31.254/24)
+
+DHCP		Switch
+(172.16.31.15/24)
+		Thin-win7
+ - 작동 시 오류가 발생하면 winpcap을 설치
+	※ winpcap 설치
+	 - 기존에 존재하는거 지우고 새로 받은거 다시 설치
+ - 작동하면 R1과 DHCP IP 설정
+	= DHCP IP 변경 후 systemctl restart network -> systemctl statys dhcpd -> 꺼져있으면 -> systemctl start dhcpd
+	= 켜지면 서로 ping 확인
+ - Thin-Win7 네트워크 연결 정보
+	연결별 DNS 접미사: 
+	설명: Intel(R) PRO/1000 MT Network Connection
+	물리적 주소: ‎00-0C-29-7E-91-89
+	DHCP 사용: 예
+	IPv4 주소: 172.16.31.100
+	IPv4 서브넷 마스크: 255.255.255.0
+	임대 시작 날짜: 2022년 2월 18일 금요일 오전 11:15:26
+	임대 만료 날짜: 2022년 2월 18일 금요일 오후 11:15:26
+	IPv4 기본 게이트웨이: 172.16.31.254
+	IPv4 DHCP 서버: 172.16.31.15
+	IPv4 DNS 서버: 8.8.8.8
+	IPv4 WINS 서버: 
+	TCP/IP를 통해 NetBIOS 사용: 예
+	링크-로컬 IPv6 주소: fe80::11aa:379f:f2ad:ea9a%14
+	IPv6 기본 게이트웨이: 
+	IPv6 DNS 서버: 
+ - DHCP : vim /var/lib/dhcpd/dhcpd.leases
+	(Thin-win7 네트워크 정보와 비교)
+
+▷ 임대기간 관련 옵션
+ - lease time : IP를 사용할 수 있는 시간
+ - default	: 임대기간이 설정되지 않았을 경우 사용
+ - max	: 최대 임대기간, 클라이언트의 임대기간이 max보다 클 경우 적용
+ - min	: 최소 임대기간, 클라이언트의 임대기간이 min보다 작을 경우 적용
+[root@localhost ~]# vim /etc/dhcp/dhcpd.conf
+	#
+	# DHCP Server Configuration file.
+	#   see /usr/share/doc/dhcp*/dhcpd.conf.example
+	#   see dhcpd.conf(5) man page
+	#
+	ddns-update-style interim;
+
+	subnet 192.168.183.0 netmask 255.255.255.0 {}
+
+	subnet 172.16.31.0 netmask 255.255.255.0 {
+       		option routers 172.16.31.254;
+        		option subnet-mask 255.255.255.0;
+        		range dynamic-bootp 172.16.31.100 172.16.31.150;
+		option domain-name-servers 8.8.8.8;
+		max-lease-time 80; 				// 최대 임대기간 80초로 설정
+	}
+esc -> :wq
+
+ ▷ 임대연장
+ 1. Renewal Time(T1)
+  - 임대기간의 50% 경과 후 수행
+  - 서버로 Unicast(유니캐스트) 통신
+  - Request 부터 수행
+ 2. Rebinding Time(T2)
+  - T1이 실패했을 경우(서버의 응답을 못 받았을 때)
+  - 임대기간의 7/8 시간이 경과한 후 수행
+  - 서버로 브로드캐스트 통신 -> 다시받는다.
+
+ ▷ip helper-address x.x.x.x(서버주소)

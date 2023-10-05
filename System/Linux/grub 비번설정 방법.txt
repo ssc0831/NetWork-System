@@ -1,0 +1,55 @@
+1. /etc/grub.d/00_header
+
+1-1. 비번걸기
+vi /etc/grub.d/00_header
+	제일 밑에
+	cat << EOF
+	set superusers="접속ID"
+	password 접속ID 비밀번호
+	EOF
+	저장
+grub2-mkconfig -o /boot/grub2/grub.cfg
+
+1-2. 비번 해제
+vi /etc/grub.d/00_header 로 설정한 구문 삭제 후
+grub2-mkconfig -o /boot/grub2/grub.cfg
+
+
+
+
+2. grub2-setpassword
+
+2-1. 암호걸기
+grub2-setpassword		입력 후 암호 설정
+cat /boot/grub2/user.cfg 	암호 확인
+재부팅 후 root // 암호 로 접속
+
+2-2. 암호 해제
+rm -f /boot/grub2/user.cfg 파일 삭제
+재부팅
+
+
+3. grub2-mkpasswd-pbkdf2
+
+3-1. 비번 걸기
+grub2-mkpasswd-pbkdf2
+Enter password :
+~
+하면 나오는거 sha512뒤에 .10000 부터 끝까지 드래그 후 복사
+ls /etc/grub.d
+cp /etc/grub.d/40_custom /etc/grub.d/40_custom.backup		// 백업파일 만들기
+vi /etc/grub.d/40_custom
+	한칸 띄우고
+	set superusers="접속ID"
+	password_pbkdf2 접속ID grub.pbkdf2.sha512[붙여넣기]
+		ex)set superusers="user"
+		    password_pbkdf2 root grub.pbkdf2.sha512.10000.9EC653F96B80694936EF24B80AEC32C1D6FECCAD413447116FBEC4F71AEC1B7876C7CFB02649DF2DC744F0C9BF92E4FEFA27F1194B43FC4E8D879826C45EB09F.4362A6140D7FDD0EF77F46F1456AC6BD7EE2ADEA9DFFB8B0663594E3576878E1594A23F6E969420DD14F4F4D09B5C735882DFABFB0D72653AEA0157135621807
+	저장
+cp /boot/grub2/grub.cfg /boot/grub2/grub.cfg.backup		// 백업파일 만들기
+grub2-mkconfig -o /boot/grub2/grub.cfg
+
+3-2. 암호 해제
+vi /etc/grub.d/40_custom
+	2줄 삭제나 주석처리
+cp /boot/grub2/grub.cfg.backup /boot/grub2/grub.cfg
+grub2-mkconfig -o /boot/grub2/grub.cfg

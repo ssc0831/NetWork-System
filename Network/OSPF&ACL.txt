@@ -1,0 +1,113 @@
+■ 가상 ospf(22.03.23-001)
+확인(sh ip protocol)
+router ospf 100
+router-id 2.2.2.2
+
+Routing Protocol is "ospf 100"
+  Router ID 3.3.3.3
+
+R2(config)#router ospf 100
+R2(config-router)#area 1 virtual-link 3.3.3.3	//통과시켜야하는 에어리어, 연결해야하는 라우터 ID
+
+R3(config)#router ospf 100
+R3(config-router)#area 1 virtual-link 2.2.2.2
+
+R1#sh ip route				//라우팅 확인
+R4#sh ip route				//라우팅 확인
+
+R2#sh ip ospf virtual-links			//버츄얼링크 상태 확인
+Virtual Link OSPF_VL0 to router 3.3.3.3 is up	//'up'이 된 것을 확인!
+
+
+■ ACL (Access List) (22.03.23-002)
+1. 목적지에서 가까운데 설정
+
+설정
+R1(config)#access-list 10 deny host 192.168.10.10 log
+R1(config)#access-list 10 permit any
+R1(config)#int f0/0
+R1(config-if)#ip access-group 10 out
+
+해제
+R1(config)#int f0/0
+R1(config-if)#no ip access-group 10 out
+R1(config-if)#ex
+R1(config)#no access-list 10
+
+named
+R1(config)#ip access-list standard test1
+R1(config-std-nacl)#deny 192.168.10.10 0.0.0.0
+R1(config-std-nacl)#permit any
+R1(config-std-nacl)#int f0/0
+R1(config-if)#ip access-group test1 out
+
+R1#sh ip access-lists
+Standard IP access list test1
+    10 deny   192.168.10.10 (10 matches)
+    20 permit any (10 matches)
+
+named 추가				//(문장번호)1~9, 11~19 사이에 아무번호나 써도 된다.
+R1(config)#ip access-list standard test1
+R1(config-std-nacl)#13 deny host 192.168.30.100
+
+named 해제
+R1(config)#ip access-list standard test1
+R1(config-std-nacl)#no 10
+
+R1(config)#no ip access-list standard test1
+R1(config-if)#no ip access-group test1 out
+
+텔넷
+R1(config)#line vty 0 4
+R1(config-line)#password 0323
+R1(config-line)#login
+R1(config-line)#end
+R1#sh control-plane host open-port
+
+ssh, http, https 활성화
+R1(config)#ip http server
+R1#sh control-plane host open-port
+R1(config)#ip http secure-server
+
+pc1 => ping 10.10.10.1 -p 23(포트번호)
+
+
+R1(config)#access-list 10 permit host 192.168.10.10
+R1(config)#access-list 10 deny any
+R1(config)#line vty 0 4
+R1(config-line)#access-class 10 in
+
+R2랑 연결
+R1(config)#ip http server
+R2(config)#username admin privilege 15 password admin
+R2(config)#ip http authentication local
+
+
+웹만 허용
+R2(config)# access-list 100 permit tcp host 192.168.10.10 host 192.168.10.1 eq www
+R2(config)#access-list 100 deny ip any any
+R2(config)#int f0/0
+R2(config-if)#ip access-group 100 in
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

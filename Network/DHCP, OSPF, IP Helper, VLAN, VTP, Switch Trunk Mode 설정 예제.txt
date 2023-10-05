@@ -1,0 +1,189 @@
+1. 각 PC의 IP Confiquration에 DHCP로 설정 / 서버는 IP 설정
+DHCP-Server
+IP 	192.168.40.100
+subnet 	255.255.255.0
+Gateway 	192.168.40.254
+
+----------------------------------------------------------------------------------------------------------------------------
+
+2. 2811 Router 0 IP설정 및 OSPF 설정
+Router0(config)#int lo 0
+Router0(config-if)#ip add 172.16.100.1 255.255.255.0
+Router0(config-if)#no sh
+
+Router0(config-if)#int f0/1
+Router0(config-if)#ip add 10.10.10.6 255.255.255.252
+Router0(config-if)#no sh
+Router0(config-if)#exit
+
+Router0(config)#router ospf 111
+Router0(config-router)#router-id 1.1.1.1
+Router0(config-router)#net 172.16.100.0 0.0.0.255 area 0
+Router0(config-router)#net 10.10.10.4 0.0.0.3 area 0
+Router0(config-router)#end
+
+----------------------------------------------------------------------------------------------------------------------------
+
+3. 2811 Router 1 IP 설정 및 OSPF 설정
+Router1(config)#int f0/1
+Router1(config-if)#ip add 10.10.10.5 255.255.255.252
+Router1(config-if)#no sh
+Router1(config-if)#int f0/0
+
+Router1(config-if)#ip add 10.10.10.2 255.255.255.252
+Router1(config-if)#no sh
+Router1(config-if)#exit
+
+Router1(config)#router ospf 111
+Router1(config-router)#router-id 2.2.2.2
+Router1(config-router)#net 10.10.10.4 0.0.0.3 area 0
+Router1(config-router)#net 10.10.10.0 0.0.0.3 area 0
+Router1(config-router)#end
+
+----------------------------------------------------------------------------------------------------------------------------
+
+4. 3560-24PS Switch 0 설정
+1) f0/2 IP 설정
+Switch0(config)#int f0/2
+Switch0(config-if)#no switchport 
+Switch0(config-if)#ip add 10.10.10.1 255.255.255.252
+Switch0(config-if)#no sh
+Switch0(config-if)#exit
+
+2) VTP Server 설정
+Switch0(config)#vtp domain cloud
+Switch0(config)#vtp mode server
+Switch0(config)#vtp password cisco
+
+3) VLAN 생성 및 GW설정
+Switch0(config)#vlan 10
+Switch0(config-vlan)#vlan 20
+Switch0(config-vlan)#vlan 30
+Switch0(config-vlan)#vlan 40
+Switch0(config-vlan)#exit
+
+Switch0(config)#int vlan 10
+Switch0(config-if)#ip add 192.168.10.254 255.255.255.0
+Switch0(config-if)#no sh
+
+Switch0(config-if)#int vlan 20
+Switch0(config-if)#ip add 192.168.20.254 255.255.255.0
+Switch0(config-if)#no sh
+
+Switch0(config-if)#int vlan 30
+Switch0(config-if)#ip add 192.168.30.254 255.255.255.0
+Switch0(config-if)#no sh
+
+Switch0(config-if)#int vlan 40
+Switch0(config-if)#ip add 192.168.40.254 255.255.255.0
+Switch0(config-if)#no sh
+Switch0(config-if)#exit
+
+4) 인터페이스에 VLAN 설정 및 트렁크모드 설정
+Switch0(config)#int f0/1
+Switch0(config-if)#switchport mode access 
+Switch0(config-if)#switchport access vlan 40
+
+Switch0(config-if)#int f0/4
+Switch0(config-if)#switchport mode access 
+Switch0(config-if)#switchport access vlan 10
+Switch0(config-if)#exit
+
+Switch0(config)#int f0/3
+Switch0(config-if)#switchport trunk encapsulation dot1q 
+Switch0(config-if)#switchport mode trunk 
+Switch0(config-if)#exit
+Switch0(config)#
+
+5) OSPF 설정
+Switch0(config)#ip routing
+Switch0(config)#router ospf 111
+Switch0(config-router)#router-id 3.3.3.3
+Switch0(config-router)#net 10.10.10.0 0.0.0.3 area 0
+Switch0(config-router)#net 192.168.10.0 0.0.0.255 area 0
+Switch0(config-router)#net 192.168.20.0 0.0.0.255 area 0
+Switch0(config-router)#net 192.168.30.0 0.0.0.255 area 0
+Switch0(config-router)#net 192.168.40.0 0.0.0.255 area 0
+Switch0(config-router)#end
+
+----------------------------------------------------------------------------------------------------------------------------
+
+5. 2950-24 Switch0 설정
+1) VTP 설정
+Switch0(config)#vtp domain cloud
+Switch0(config)#vtp mode client
+Switch0(config)#vtp password cisco
+
+2) 트렁크모드 설정
+Switch0(config)#int range f0/1-2
+Switch0(config-if-range)#switchport mode trunk 
+Switch0(config-if-range)#exit
+
+3) VLAN 설정
+Switch0(config)#int f0/3
+Switch0(config-if)#switchport mode access 
+Switch0(config-if)#switchport access vlan 30
+Switch0(config-if)#end
+
+----------------------------------------------------------------------------------------------------------------------------
+
+6. 2950-24 Switch1 설정
+1) VTP 설정
+Switch0(config)#vtp domain cloud
+Switch0(config)#vtp mode transparent
+Switch0(config)#vtp password cisco
+
+2) 트렁크모드 설정
+Switch0(config)#int range f0/1-2
+Switch0(config-if-range)#switchport mode trunk 
+Switch0(config-if-range)#exit
+
+3) VLAN 생성
+switch1(config)#vlan 100
+switch1(config-vlan)#vlan 200
+switch1(config-vlan)#end
+
+----------------------------------------------------------------------------------------------------------------------------
+
+7. 2950-24 Switch2 설정
+1) VTP 설정
+Switch0(config)#vtp domain cloud
+Switch0(config)#vtp mode client
+Switch0(config)#vtp password cisco
+
+2) 트렁크모드 설정
+Switch0(config)#int f0/1
+Switch0(config-if-range)#switchport mode trunk 
+Switch0(config-if-range)#exit
+
+3) VLAN 설정
+Switch0(config)#int f0/3
+Switch0(config-if)#switchport mode access 
+Switch0(config-if)#switchport access vlan 40
+Switch0(config-if)#end
+
+----------------------------------------------------------------------------------------------------------------------------
+
+8. DHCP 서버 설정 및 IP Helper 설정
+1) DHCP 서버
+
+2) Multilayer Switch0
+Switch0(config)#int vlan 10
+Switch0(config-if)#ip helper-address 192.168.40.100
+Switch0(config-if)#int vlan 30
+Switch0(config-if)#ip helper-address 192.168.40.100
+Switch0(config-if)#int vlan 40
+Switch0(config-if)#ip helper-address 192.168.40.100
+
+
+
+
+
+
+
+
+
+
+
+
+
